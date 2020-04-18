@@ -6,7 +6,7 @@
 #    By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2019/10/16 18:05:28 by sadawi            #+#    #+#              #
-#    Updated: 2020/02/21 17:02:00 by sadawi           ###   ########.fr        #
+#    Updated: 2020/04/18 17:32:20 by sadawi           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -46,7 +46,8 @@ FLAGS=-Wall -Wextra -Werror
 
 all: $(NAME)
 
-$(NAME):
+$(NAME): $(SRCS)
+	@rm -rf objs
 	@echo Compiling $(NAME)...
 	@gcc $(FLAGS) -c -I includes $(SRCS)
 	@mkdir objs

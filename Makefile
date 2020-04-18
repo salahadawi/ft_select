@@ -6,18 +6,13 @@
 #    By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2020/04/10 19:27:20 by sadawi            #+#    #+#              #
-#    Updated: 2020/04/18 16:02:43 by sadawi           ###   ########.fr        #
+#    Updated: 2020/04/18 17:58:50 by sadawi           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME = ft_select
 
 CFILES = *.c
-
-BUILTINS = builtin_cd.c builtin_echo.c builtin_env.c builtin_exit.c \
-builtin_setenv.c builtin_unsetenv.c
-
-SHORTCUTS = shortcut_cd.c  shortcut_setenv.c
 
 SRCS = $(CFILES)
 #SRCS = $(addprefix srcs/, $(CFILES))
@@ -28,12 +23,13 @@ INCLUDES = -I includes -I libft/includes
 
 FLAGS = -Wall -Wextra -Werror
 
-RUN_LIB = make -C libft/ fclean && make -C libft/
+RUN_LIB = make --no-print-directory -C libft/
 
-all: $(NAME)
-
-$(NAME):
+all: 
 	@$(RUN_LIB)
+	@make --no-print-director $(NAME)
+
+$(NAME): $(SRCS) libft/
 	@rm -rf objs
 	@echo Compiling $(NAME)...
 	@gcc $(FLAGS) $(INCLUDES) -c $(SRCS)
