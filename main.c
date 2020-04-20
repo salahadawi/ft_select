@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/18 16:15:00 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/20 16:06:05 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/20 21:16:55 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,6 +32,7 @@ void	restore_terminal_mode(void)
 {
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_select->old) == -1)
 		handle_error("Invalid input/output descriptor");
+	ft_printf("\x1b[?25h");
 }
 
 int		iscntrl(int c)
@@ -82,25 +83,92 @@ void	init_signal_handling(void)
 		signal(i++, handle_signal);
 }
 
+void	print_args(void)
+{
+	t_arg *current;
+
+	current = g_select->args;
+	while (current)
+	{
+		if (current->cursor)
+			ft_printf(UNDERLINE);
+		if (current->selected)
+			ft_printf(INVERSE_VIDEO);
+		ft_printf("%s" NORMAL, current->str);
+		current = current->next;
+		if (current)
+			ft_printf(" ");
+	}
+}
+
+void	ft_clear_screen(void)
+{
+	ft_printf("\x1b[?25l");
+	ft_printf("\x1b[2J");
+	ft_printf("\x1b[H");
+}
+
+int		ft_putschar(int c)
+{
+	write(1, &c, 1);
+}
+
+t_arg	*new_arg(char *str, t_arg *prev)
+{
+	t_arg *new;
+	
+	new = (t_arg*)ft_memalloc(sizeof(t_arg));
+	new->str = str;
+	new->selected = 0;
+	if (!prev)
+		new->cursor = 1;
+	else
+		new->cursor = 0;
+	new->prev = prev;
+	new->next = NULL;
+	return (new);
+}
+
+void	init_args(int argc, char **argv)
+{
+	t_arg *current;
+	int i;
+
+	g_select = (t_select*)ft_memalloc(sizeof(t_select));
+	current = NULL;
+	i = 1;
+	while (i < argc)
+	{
+		if (!current)
+		{
+			current = new_arg(argv[i++], NULL);
+			g_select->args = current;
+		}
+		else
+		{
+			current->next = new_arg(argv[i++], current);
+			current = current->next;
+		}
+	}
+}
+
 int		main(int argc, char **argv)
 {
 	char c;
 
 	init_signal_handling();
-	g_select = (t_select*)ft_memalloc(sizeof(t_select));
+	init_args(argc, argv);
 	if (tcgetattr(0, &g_select->old) == -1)
 		handle_error("Invalid input/output descriptor");
 	set_terminal_raw_mode();
 	while (1)
 	{
+		ft_clear_screen();
+		print_args();
 		if (read(0, &c, 1) == -1)
 			handle_error("Read failed.");
 		if (c == 'q')
 			break;
-		if (iscntrl(c))
-			ft_printf("%d", c);
-		else
-			ft_printf("%c", c);
 	}
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_select->old) == -1)
 		handle_error("Invalid input/output descriptor");
