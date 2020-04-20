@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/10 12:20:24 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/18 22:01:59 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/20 16:09:41 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -25,6 +25,9 @@
 typedef struct		s_select
 {
 	struct termios	old;
+	struct termios	raw;
 }					t_select;
+
+t_select			*g_select;
 
 #endif
