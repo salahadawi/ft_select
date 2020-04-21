@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/10 12:20:24 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/21 14:58:47 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/21 20:13:19 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,12 @@
 # define CURSOR_VISIBLE "ve"
 # define CLEAR_SCREEN "cl"
 
+# define ENTER 10
+# define ESCAPE 27
+# define SPACE 32
+# define LEFT_ARROW -32
+# define RIGHT_ARROW -33
+
 typedef	struct		s_arg
 {
 	char			*str;
@@ -43,6 +49,7 @@ typedef struct		s_select
 	struct termios	old;
 	struct termios	raw;
 	t_arg			*args;
+	t_arg			*current;
 }					t_select;
 
 t_select			*g_select;
