@@ -6,7 +6,7 @@
 #    By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2020/04/10 19:27:20 by sadawi            #+#    #+#              #
-#    Updated: 2020/04/18 17:58:50 by sadawi           ###   ########.fr        #
+#    Updated: 2020/04/21 12:03:30 by sadawi           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -35,7 +35,7 @@ $(NAME): $(SRCS) libft/
 	@gcc $(FLAGS) $(INCLUDES) -c $(SRCS)
 	@mkdir objs
 	@mv $(notdir $(SRCS:.c=.o)) objs
-	@gcc $(FLAGS) $(INCLUDES) -o $(NAME) $(OBJS) libft/libft.a
+	@gcc $(FLAGS) $(INCLUDES) -o $(NAME) $(OBJS) libft/libft.a -ltermcap
 	@echo $(NAME) compiled succesfully!
 
 lib:
@@ -47,7 +47,7 @@ noflags:
 	@gcc $(INCLUDES) -c $(SRCS)
 	@mkdir objs
 	@mv $(notdir $(SRCS:.c=.o)) objs
-	@gcc $(INCLUDES) -o $(NAME) $(OBJS) libft/libft.a
+	@gcc $(INCLUDES) -o $(NAME) $(OBJS) libft/libft.a -ltermcap
 	@echo $(NAME) compiled without flags succesfully!
 
 clean:
