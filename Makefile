@@ -6,7 +6,7 @@
 #    By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2020/04/10 19:27:20 by sadawi            #+#    #+#              #
-#    Updated: 2020/04/21 12:03:30 by sadawi           ###   ########.fr        #
+#    Updated: 2020/04/21 15:37:06 by sadawi           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
@@ -56,7 +56,12 @@ clean:
 	@make -C libft/ clean
 	@echo Clean successful!
 
-fclean: clean
+clean_binary:
+	@/bin/rm -f $(OBJS)
+	@rm -rf objs
+	@echo Clean successful!
+
+fclean: clean_binary
 	@/bin/rm -f $(NAME)
 	@make -C libft/ fclean
 	@echo Clean successful!
