@@ -6,16 +6,34 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/18 16:15:00 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/20 21:16:55 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/21 14:59:00 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
 #include "ft_select.h"
 
+int		ft_putschar(int c)
+{
+	if (write(0, &c, 1) == -1)
+		return (-1);
+	return (0);
+}
+
+void	set_terminal(char *id)
+{
+	tputs(tgetstr(id, NULL), 1, ft_putschar);
+}
+
+void	restore_terminal_mode(void)
+{
+	tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_select->old);
+	set_terminal(CURSOR_VISIBLE);
+}
+
 void	handle_error(char *message)
 {
-	ft_printf("Error: %s.\r\n", message);
-	tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_select->old);
+	ft_printf("Error: %s.\n", message);
+	restore_terminal_mode();
 	exit(0);
 }
 
@@ -26,13 +44,6 @@ void	set_terminal_raw_mode(void)
 	g_select->raw.c_lflag &= ~(ECHO | ICANON);
 	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_select->raw) == -1)
 		handle_error("Invalid input/output descriptor");
-}
-
-void	restore_terminal_mode(void)
-{
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_select->old) == -1)
-		handle_error("Invalid input/output descriptor");
-	ft_printf("\x1b[?25h");
 }
 
 int		iscntrl(int c)
@@ -48,9 +59,11 @@ void	handle_signal_suspend(void)
 
 void	handle_signal_continue(void)
 {
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_select->old) == -1)
+	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_select->raw) == -1)
 		handle_error("Invalid input/output descriptor");
 	ft_printf("Raw terminal configuration restored!\n");
+	ft_clear_screen(); // find way to not repeat this
+	print_args();
 }
 
 void	handle_signal_resize(void)
@@ -91,26 +104,21 @@ void	print_args(void)
 	while (current)
 	{
 		if (current->cursor)
-			ft_printf(UNDERLINE);
+			set_terminal(TEXT_UNDERLINE);
 		if (current->selected)
-			ft_printf(INVERSE_VIDEO);
-		ft_printf("%s" NORMAL, current->str);
+			set_terminal(TEXT_INVERSE_VIDEO);
+		ft_fprintf(0, "%s", current->str);
+		set_terminal(TEXT_NORMAL);
 		current = current->next;
 		if (current)
-			ft_printf(" ");
+			ft_fprintf(0, " ");
 	}
 }
 
 void	ft_clear_screen(void)
 {
-	ft_printf("\x1b[?25l");
-	ft_printf("\x1b[2J");
-	ft_printf("\x1b[H");
-}
-
-int		ft_putschar(int c)
-{
-	write(1, &c, 1);
+	set_terminal(CURSOR_INVISIBLE);
+	set_terminal(CLEAR_SCREEN);
 }
 
 t_arg	*new_arg(char *str, t_arg *prev)
@@ -152,14 +160,27 @@ void	init_args(int argc, char **argv)
 	}
 }
 
+void	init_termcaps(void)
+{
+	char *terminal_name;
+
+	if (!(isatty(0)))
+		handle_error("Not a terminal");
+	if (!(terminal_name = getenv("TERM")))
+		handle_error("Terminal enviroment variable not found");
+	if (!(tgetent(NULL, terminal_name)))
+		handle_error("Terminal specified in env not found");
+		
+}
+
 int		main(int argc, char **argv)
 {
 	char c;
 
 	init_signal_handling();
 	init_args(argc, argv);
-	if (tcgetattr(0, &g_select->old) == -1)
-		handle_error("Invalid input/output descriptor");
+	tcgetattr(0, &g_select->old);
+	init_termcaps();
 	set_terminal_raw_mode();
 	while (1)
 	{
@@ -170,7 +191,6 @@ int		main(int argc, char **argv)
 		if (c == 'q')
 			break;
 	}
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_select->old) == -1)
-		handle_error("Invalid input/output descriptor");
+	restore_terminal_mode();
 	return (0);
 }
