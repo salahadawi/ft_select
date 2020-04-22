@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/10 12:20:24 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/22 18:52:06 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/22 20:21:50 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -39,7 +39,6 @@ typedef	struct		s_arg
 {
 	char			*str;
 	int				selected;
-	int				cursor;
 	struct s_arg	*prev;
 	struct s_arg	*next;
 }					t_arg;
