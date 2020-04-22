@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/18 16:15:00 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/21 20:28:17 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/22 19:24:45 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,6 +29,7 @@ void	restore_terminal_mode(void)
 	tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_select->old);
 	set_terminal(CURSOR_VISIBLE);
 	set_terminal(TEXT_NORMAL);
+	set_terminal("te");
 }
 
 void	handle_error(char *message)
@@ -38,15 +39,18 @@ void	handle_error(char *message)
 	exit(0);
 }
 
-void	set_terminal_raw_mode(void)
+void	create_terminal_raw_mode(void)
 {
-	if (tcgetattr(0, &g_select->raw) == -1)
-		handle_error("Invalid input/output descriptor");
+	tcgetattr(0, &g_select->raw);
 	g_select->raw.c_lflag &= ~(ECHO | ICANON);
 	g_select->raw.c_cc[VMIN] = 0;
 	g_select->raw.c_cc[VTIME] = 1;
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_select->raw) == -1)
-		handle_error("Invalid input/output descriptor");
+}
+
+void	set_terminal_raw_mode(void)
+{
+	tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_select->raw);
+	set_terminal(CURSOR_INVISIBLE);
 	set_terminal("ti");
 }
 
@@ -63,9 +67,8 @@ void	handle_signal_suspend(void)
 
 void	handle_signal_continue(void)
 {
-	if (tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_select->raw) == -1)
-		handle_error("Invalid input/output descriptor");
-	ft_printf("Raw terminal configuration restored!\n");
+	set_terminal_raw_mode();
+	//ft_printf("Raw terminal configuration restored!\n");
 	ft_clear_screen(); // find way to not repeat this
 	print_args();
 }
@@ -77,9 +80,10 @@ void	handle_signal_resize(void)
 
 void	handle_signal(int sig)
 {
-	ft_printf("Signal %d handled!\n", sig);
-	restore_terminal_mode();
-	ft_printf("Old terminal configuration restored!\n");
+	//ft_printf("Signal %d handled!\n", sig);
+	if (sig != SIGCONT)
+		restore_terminal_mode();
+	//ft_printf("Old terminal configuration restored!\n");
 	//free memory here
 	if (sig == SIGTSTP)
 		handle_signal_suspend();
@@ -128,7 +132,6 @@ void	print_args(void)
 
 void	ft_clear_screen(void)
 {
-	set_terminal(CURSOR_INVISIBLE);
 	set_terminal(CLEAR_SCREEN);
 }
 
@@ -178,6 +181,7 @@ void	init_termcaps(void)
 	char *terminal_name;
 
 	g_select = (t_select*)ft_memalloc(sizeof(t_select));
+	g_select->selected_amount = 0;
 	if (!(isatty(0)))
 		handle_error("Not a terminal");
 	if (!(terminal_name = getenv("TERM")))
@@ -213,7 +217,7 @@ int		handle_keys(void)
 	c = read_key();
 	if (c == ESCAPE)
 	{
-		ft_printf("\n");
+		//ft_printf("\n");
 		restore_terminal_mode();
 		exit(0);
 	}
@@ -222,6 +226,7 @@ int		handle_keys(void)
 	else if (c == SPACE)
 	{
 		g_select->current->selected = !g_select->current->selected;
+		g_select->selected_amount += g_select->current->selected ? 1 : -1;
 		c = RIGHT_ARROW;
 	}
 	else if (c == LEFT_ARROW)
@@ -246,7 +251,6 @@ void	print_selected(void)
 
 	loop = 0;
 	current = g_select->args;
-	set_terminal("te");
 	while (current)
 	{
 		if (current == g_select->args)
@@ -255,12 +259,14 @@ void	print_selected(void)
 				break;
 		}
 		if (current->selected)
+		{
 			ft_fprintf(1, "%s", current->str);
+			if (g_select->selected_amount-- > 1)
+				ft_fprintf(1, " ");
+		}
 		current = current->next;
-		if (current)
-			ft_fprintf(0, " ");
 	}
-	ft_printf("\n");
+	//ft_printf("\n");
 }
 
 int		main(int argc, char **argv)
@@ -273,6 +279,7 @@ int		main(int argc, char **argv)
 		handle_error("Please include at least one argument");
 	init_signal_handling();
 	init_args(argc, argv);
+	create_terminal_raw_mode();
 	set_terminal_raw_mode();
 	while (1)
 	{
