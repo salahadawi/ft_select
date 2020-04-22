@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/18 16:15:00 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/22 19:24:45 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/22 20:37:21 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -61,6 +61,7 @@ int		iscntrl(int c)
 
 void	handle_signal_suspend(void)
 {
+	restore_terminal_mode();
 	signal(SIGTSTP, SIG_DFL);
 	ioctl(0, TIOCSTI, "\032");
 }
@@ -81,8 +82,6 @@ void	handle_signal_resize(void)
 void	handle_signal(int sig)
 {
 	//ft_printf("Signal %d handled!\n", sig);
-	if (sig != SIGCONT)
-		restore_terminal_mode();
 	//ft_printf("Old terminal configuration restored!\n");
 	//free memory here
 	if (sig == SIGTSTP)
@@ -92,7 +91,10 @@ void	handle_signal(int sig)
 	else if (sig == SIGWINCH)
 		handle_signal_resize();
 	else
+	{
+		restore_terminal_mode();
 		exit(0);
+	}
 }
 
 void	init_signal_handling(void)
@@ -118,7 +120,7 @@ void	print_args(void)
 			if (loop++)
 				break;
 		}
-		if (current->cursor)
+		if (current == g_select->current)
 			set_terminal(TEXT_UNDERLINE);
 		if (current->selected)
 			set_terminal(TEXT_INVERSE_VIDEO);
@@ -142,10 +144,6 @@ t_arg	*new_arg(char *str, t_arg *prev)
 	new = (t_arg*)ft_memalloc(sizeof(t_arg));
 	new->str = str;
 	new->selected = 0;
-	if (!prev)
-		new->cursor = 1;
-	else
-		new->cursor = 0;
 	new->prev = prev;
 	new->next = NULL;
 	return (new);
@@ -210,11 +208,35 @@ int		read_key(void)
 	return c;
 }
 
+int		delete_arg(t_arg *arg)
+{
+	int		last_arg;
+
+	last_arg = 0;
+	if (arg == arg->next)
+		last_arg = 1;
+	if (arg == g_select->args)
+		g_select->args = g_select->args->next;
+	arg->prev->next = arg->next;
+	arg->next->prev = arg-> prev;
+	if (arg->selected)
+		g_select->selected_amount--;
+		g_select->current = arg->next;
+	free(arg);
+	arg = NULL;
+	return (!last_arg);
+}
+
 int		handle_keys(void)
 {
 	char c;
 
 	c = read_key();
+	if (c == 127)
+	{
+		if (!(delete_arg(g_select->current)))
+			c = ESCAPE;
+	}
 	if (c == ESCAPE)
 	{
 		//ft_printf("\n");
@@ -230,17 +252,9 @@ int		handle_keys(void)
 		c = RIGHT_ARROW;
 	}
 	else if (c == LEFT_ARROW)
-	{
-		g_select->current->cursor = 0;
 		g_select->current = g_select->current->prev;
-		g_select->current->cursor = 1;
-	}
 	if (c == RIGHT_ARROW)
-	{
-		g_select->current->cursor = 0;
 		g_select->current = g_select->current->next;
-		g_select->current->cursor = 1;
-	}
 	return (1);
 }
 
