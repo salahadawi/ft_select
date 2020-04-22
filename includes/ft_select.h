@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/10 12:20:24 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/21 20:13:19 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/22 18:52:06 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -50,6 +50,7 @@ typedef struct		s_select
 	struct termios	raw;
 	t_arg			*args;
 	t_arg			*current;
+	int				selected_amount;
 }					t_select;
 
 t_select			*g_select;
