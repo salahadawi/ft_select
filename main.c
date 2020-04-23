@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/18 16:15:00 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/23 17:33:46 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/23 19:07:16 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -77,7 +77,15 @@ void	handle_signal_continue(t_select *select)
 
 void	handle_signal_resize(t_select *select)
 {
-
+	ioctl(0, TIOCGWINSZ, &select->window_size);
+	ft_clear_screen();
+	print_args(select);
+	int i = 0;
+	for (t_arg *arg = select->args->next; arg != select->args; arg = arg->next)
+		i += ft_strlen(arg->str) + 1;
+	i += ft_strlen(select->args->str);
+	//ft_printf("%d\n", i);
+	//ft_printf("%d\n", select->window_size.ws_col);
 }
 
 void	handle_signal(int sig)
@@ -112,8 +120,10 @@ void	print_args(t_select *select)
 {
 	t_arg 	*current;
 	int		loop;
+	int		line_len;
 
 	loop = 0;
+	line_len = 0;
 	current = select->args;
 	while (current)
 	{
@@ -126,11 +136,16 @@ void	print_args(t_select *select)
 			set_terminal(TEXT_UNDERLINE);
 		if (current->selected)
 			set_terminal(TEXT_INVERSE_VIDEO);
+		if ((line_len += ft_strlen(current->str) + 2) > select->window_size.ws_col)
+		{
+			ft_fprintf(0, "\n");
+			line_len = 0;
+		}
 		ft_fprintf(0, "%s", current->str);
 		set_terminal(TEXT_NORMAL);
 		current = current->next;
 		if (current)
-			ft_fprintf(0, " ");
+			ft_fprintf(0, "  ");
 	}
 }
 
@@ -210,6 +225,7 @@ void	init_termcaps(t_select **select)
 	if (tgetent(NULL, terminal_name) < 1)
 		handle_error(*select, "Terminal specified in env not found", 0);
 	init_key_sequences(*select);
+	ioctl(0, TIOCGWINSZ, &(*select)->window_size);
 }
 
 int		read_key(t_select *select)

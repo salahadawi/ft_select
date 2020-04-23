@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/10 12:20:24 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/23 17:18:52 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/23 18:04:49 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -65,6 +65,7 @@ typedef struct		s_select
 	t_arg			*args;
 	t_arg			*current;
 	int				selected_amount;
+	struct winsize	window_size;
 }					t_select;
 
 t_select			*g_select;
@@ -72,5 +73,7 @@ t_select			*g_select;
 void	ft_clear_screen(void);
 
 void	print_args(t_select *select);
+
+void	handle_signal(int sig);
 
 #endif
