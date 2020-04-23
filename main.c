@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/18 16:15:00 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/23 12:50:46 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/23 15:12:06 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -276,6 +276,25 @@ void	handle_control_sequence(char *c)
 		g_select->current = g_select->args->prev;
 }
 
+void	select_deselect_all(int select)
+{
+	t_arg	*arg;
+	int		loop;
+
+	arg = g_select->args;
+	g_select->selected_amount = 0;
+	loop = 0;
+	while(arg)
+	{
+		if (arg == g_select->args)
+			if (loop++)
+				break;
+		arg->selected = select;
+		g_select->selected_amount += select;
+		arg = arg->next;
+	}
+}
+
 int		handle_keys(void)
 {
 	char c;
@@ -301,6 +320,10 @@ int		handle_keys(void)
 		g_select->selected_amount += g_select->current->selected ? 1 : -1;
 		g_select->current = g_select->current->next;
 	}
+	else if (c == '+')
+		select_deselect_all(1);
+	else if (c == '-')
+		select_deselect_all(0);
 	return (1);
 }
 
@@ -314,10 +337,8 @@ void	print_selected(void)
 	while (current)
 	{
 		if (current == g_select->args)
-		{
 			if (loop++)
 				break;
-		}
 		if (current->selected)
 		{
 			ft_fprintf(1, "%s", current->str);
@@ -326,7 +347,6 @@ void	print_selected(void)
 		}
 		current = current->next;
 	}
-	//ft_printf("\n");
 }
 
 int		main(int argc, char **argv)
