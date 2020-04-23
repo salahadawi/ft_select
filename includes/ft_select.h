@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/10 12:20:24 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/22 20:21:50 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/23 12:15:24 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -28,12 +28,17 @@
 # define CURSOR_INVISIBLE "vi"
 # define CURSOR_VISIBLE "ve"
 # define CLEAR_SCREEN "cl"
+# define LEFT_SEQUENCE "kl"
+# define RIGHT_SEQUENCE "kr"
+# define UP_SEQUENCE "ku"
+# define DOWN_SEQUENCE "kd"
+# define DELETE_SEQUENCE "kD"
 
+# define DELETE -49
 # define ENTER 10
 # define ESCAPE 27
 # define SPACE 32
-# define LEFT_ARROW -32
-# define RIGHT_ARROW -33
+# define BACKSPACE 127
 
 typedef	struct		s_arg
 {
@@ -43,10 +48,20 @@ typedef	struct		s_arg
 	struct s_arg	*next;
 }					t_arg;
 
+typedef	struct		s_key_sequences
+{
+	char			left_arrow;
+	char			right_arrow;
+	char			up_arrow;
+	char			down_arrow;
+	char			delete;
+}					t_key_sequences;
+
 typedef struct		s_select
 {
 	struct termios	old;
 	struct termios	raw;
+	t_key_sequences	key_sequences;
 	t_arg			*args;
 	t_arg			*current;
 	int				selected_amount;
