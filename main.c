@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/18 16:15:00 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/22 20:37:21 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/23 12:50:46 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -32,10 +32,11 @@ void	restore_terminal_mode(void)
 	set_terminal("te");
 }
 
-void	handle_error(char *message)
+void	handle_error(char *message, int reset)
 {
 	ft_printf("Error: %s.\n", message);
-	restore_terminal_mode();
+	if (reset)
+		restore_terminal_mode();
 	exit(0);
 }
 
@@ -174,6 +175,27 @@ void	init_args(int argc, char **argv)
 	g_select->current->prev = current;
 }
 
+void	init_key_sequences(void)
+{
+	char *sequence;
+
+	sequence = tgetstr(LEFT_SEQUENCE, NULL);
+	g_select->key_sequences.left_arrow = ft_strlen(sequence) > 2 ?
+	sequence[2] : 0;
+	sequence = tgetstr(RIGHT_SEQUENCE, NULL);
+	g_select->key_sequences.right_arrow = ft_strlen(sequence) > 2 ?
+	sequence[2] : 0;
+	sequence = tgetstr(UP_SEQUENCE, NULL);
+	g_select->key_sequences.up_arrow = ft_strlen(sequence) > 2 ?
+	sequence[2] : 0;
+	sequence = tgetstr(DOWN_SEQUENCE, NULL);
+	g_select->key_sequences.down_arrow = ft_strlen(sequence) > 2 ?
+	sequence[2] : 0;
+	sequence = tgetstr(DELETE_SEQUENCE, NULL);
+	g_select->key_sequences.delete = ft_strlen(sequence) > 2 ?
+	sequence[2] : 0;
+}
+
 void	init_termcaps(void)
 {
 	char *terminal_name;
@@ -181,11 +203,12 @@ void	init_termcaps(void)
 	g_select = (t_select*)ft_memalloc(sizeof(t_select));
 	g_select->selected_amount = 0;
 	if (!(isatty(0)))
-		handle_error("Not a terminal");
+		handle_error("Not a terminal", 0);
 	if (!(terminal_name = getenv("TERM")))
-		handle_error("Terminal enviroment variable not found");
+		handle_error("Terminal enviroment variable not found", 0);
 	if (tgetent(NULL, terminal_name) < 1)
-		handle_error("Terminal specified in env not found");
+		handle_error("Terminal specified in env not found", 0);
+	init_key_sequences();
 }
 
 int		read_key(void)
@@ -195,15 +218,22 @@ int		read_key(void)
 	
 	c = 0;
 	if (read(0, &c, 1) == -1)
-		handle_error("Read failed.");
-	if (c == 27)
+		handle_error("Read failed.", 1);
+	if (c == ESCAPE)
 	{
 		if (read(0, &sequence[0], 1) != 1)
-			return (27);
+			return (ESCAPE);
 		if (read(0, &sequence[1], 1) != 1)
-			return (27);
+			return (ESCAPE);
 		if (sequence[0] == '[')
+		{
+			if (ft_isdigit(sequence[1]))
+			{
+				if (read(0, &sequence[2], 1) != 1)
+					return (ESCAPE);
+			}
 			return (sequence[1] - 100);
+		}
 	}
 	return c;
 }
@@ -221,10 +251,29 @@ int		delete_arg(t_arg *arg)
 	arg->next->prev = arg-> prev;
 	if (arg->selected)
 		g_select->selected_amount--;
-		g_select->current = arg->next;
+	g_select->current = arg->next;
 	free(arg);
 	arg = NULL;
 	return (!last_arg);
+}
+
+void	handle_control_sequence(char *c)
+{
+	*c += 100;
+
+	if (*c == g_select->key_sequences.delete)
+	{
+		if (!(delete_arg(g_select->current)))
+			*c = ESCAPE;
+	}
+	else if (*c == g_select->key_sequences.left_arrow)
+		g_select->current = g_select->current->prev;
+	else if (*c == g_select->key_sequences.right_arrow)
+		g_select->current = g_select->current->next;
+	else if (*c == g_select->key_sequences.up_arrow)
+		g_select->current = g_select->args;
+	else if (*c == g_select->key_sequences.down_arrow)
+		g_select->current = g_select->args->prev;
 }
 
 int		handle_keys(void)
@@ -232,14 +281,15 @@ int		handle_keys(void)
 	char c;
 
 	c = read_key();
-	if (c == 127)
+	if (c < 0)
+		handle_control_sequence(&c);
+	if (c == BACKSPACE)
 	{
 		if (!(delete_arg(g_select->current)))
 			c = ESCAPE;
 	}
 	if (c == ESCAPE)
 	{
-		//ft_printf("\n");
 		restore_terminal_mode();
 		exit(0);
 	}
@@ -249,12 +299,8 @@ int		handle_keys(void)
 	{
 		g_select->current->selected = !g_select->current->selected;
 		g_select->selected_amount += g_select->current->selected ? 1 : -1;
-		c = RIGHT_ARROW;
-	}
-	else if (c == LEFT_ARROW)
-		g_select->current = g_select->current->prev;
-	if (c == RIGHT_ARROW)
 		g_select->current = g_select->current->next;
+	}
 	return (1);
 }
 
@@ -285,12 +331,10 @@ void	print_selected(void)
 
 int		main(int argc, char **argv)
 {
-	char c;
-
 	init_termcaps();
 	tcgetattr(0, &g_select->old);
 	if (argc < 2)
-		handle_error("Please include at least one argument");
+		handle_error("Please include at least one argument", 0);
 	init_signal_handling();
 	init_args(argc, argv);
 	create_terminal_raw_mode();
