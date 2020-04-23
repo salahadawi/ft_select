@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/18 16:15:00 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/23 15:12:06 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/23 17:33:46 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,33 +24,33 @@ void	set_terminal(char *id)
 	tputs(tgetstr(id, NULL), 1, ft_putschar);
 }
 
-void	restore_terminal_mode(void)
+void	restore_terminal_mode(t_select *select)
 {
-	tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_select->old);
+	tcsetattr(STDIN_FILENO, TCSAFLUSH, &select->old);
 	set_terminal(CURSOR_VISIBLE);
 	set_terminal(TEXT_NORMAL);
 	set_terminal("te");
 }
 
-void	handle_error(char *message, int reset)
+void	handle_error(t_select *select, char *message, int reset)
 {
 	ft_printf("Error: %s.\n", message);
 	if (reset)
-		restore_terminal_mode();
+		restore_terminal_mode(select);
 	exit(0);
 }
 
-void	create_terminal_raw_mode(void)
+void	create_terminal_raw_mode(t_select *select)
 {
-	tcgetattr(0, &g_select->raw);
-	g_select->raw.c_lflag &= ~(ECHO | ICANON);
-	g_select->raw.c_cc[VMIN] = 0;
-	g_select->raw.c_cc[VTIME] = 1;
+	tcgetattr(0, &select->raw);
+	select->raw.c_lflag &= ~(ECHO | ICANON);
+	select->raw.c_cc[VMIN] = 0;
+	select->raw.c_cc[VTIME] = 1;
 }
 
-void	set_terminal_raw_mode(void)
+void	set_terminal_raw_mode(t_select *select)
 {
-	tcsetattr(STDIN_FILENO, TCSAFLUSH, &g_select->raw);
+	tcsetattr(STDIN_FILENO, TCSAFLUSH, &select->raw);
 	set_terminal(CURSOR_INVISIBLE);
 	set_terminal("ti");
 }
@@ -60,22 +60,22 @@ int		iscntrl(int c)
 	return (c < 32 || c == 127);
 }
 
-void	handle_signal_suspend(void)
+void	handle_signal_suspend(t_select *select)
 {
-	restore_terminal_mode();
+	restore_terminal_mode(select);
 	signal(SIGTSTP, SIG_DFL);
 	ioctl(0, TIOCSTI, "\032");
 }
 
-void	handle_signal_continue(void)
+void	handle_signal_continue(t_select *select)
 {
-	set_terminal_raw_mode();
+	set_terminal_raw_mode(select);
 	//ft_printf("Raw terminal configuration restored!\n");
 	ft_clear_screen(); // find way to not repeat this
-	print_args();
+	print_args(select);
 }
 
-void	handle_signal_resize(void)
+void	handle_signal_resize(t_select *select)
 {
 
 }
@@ -86,42 +86,43 @@ void	handle_signal(int sig)
 	//ft_printf("Old terminal configuration restored!\n");
 	//free memory here
 	if (sig == SIGTSTP)
-		handle_signal_suspend();
+		handle_signal_suspend(g_select);
 	else if (sig == SIGCONT)
-		handle_signal_continue();
+		handle_signal_continue(g_select);
 	else if (sig == SIGWINCH)
-		handle_signal_resize();
+		handle_signal_resize(g_select);
 	else
 	{
-		restore_terminal_mode();
+		restore_terminal_mode(g_select);
 		exit(0);
 	}
 }
 
-void	init_signal_handling(void)
+void	init_signal_handling(t_select *select)
 {
 	int i;
 
+	g_select = select;
 	i = 0;
 	while (i <= SIGRTMAX)
 		signal(i++, handle_signal);
 }
 
-void	print_args(void)
+void	print_args(t_select *select)
 {
 	t_arg 	*current;
 	int		loop;
 
 	loop = 0;
-	current = g_select->args;
+	current = select->args;
 	while (current)
 	{
-		if (current == g_select->args)
+		if (current == select->args)
 		{
 			if (loop++)
 				break;
 		}
-		if (current == g_select->current)
+		if (current == select->current)
 			set_terminal(TEXT_UNDERLINE);
 		if (current->selected)
 			set_terminal(TEXT_INVERSE_VIDEO);
@@ -150,7 +151,7 @@ t_arg	*new_arg(char *str, t_arg *prev)
 	return (new);
 }
 
-void	init_args(int argc, char **argv)
+void	init_args(t_select *select, int argc, char **argv)
 {
 	t_arg *current;
 	int i;
@@ -162,8 +163,8 @@ void	init_args(int argc, char **argv)
 		if (!current)
 		{
 			current = new_arg(argv[i++], NULL);
-			g_select->args = current;
-			g_select->current = current;
+			select->args = current;
+			select->current = current;
 		}
 		else
 		{
@@ -171,54 +172,54 @@ void	init_args(int argc, char **argv)
 			current = current->next;
 		}
 	}
-	current->next = g_select->current;
-	g_select->current->prev = current;
+	current->next = select->current;
+	select->current->prev = current;
 }
 
-void	init_key_sequences(void)
+void	init_key_sequences(t_select *select)
 {
 	char *sequence;
 
 	sequence = tgetstr(LEFT_SEQUENCE, NULL);
-	g_select->key_sequences.left_arrow = ft_strlen(sequence) > 2 ?
+	select->key_sequences.left_arrow = ft_strlen(sequence) > 2 ?
 	sequence[2] : 0;
 	sequence = tgetstr(RIGHT_SEQUENCE, NULL);
-	g_select->key_sequences.right_arrow = ft_strlen(sequence) > 2 ?
+	select->key_sequences.right_arrow = ft_strlen(sequence) > 2 ?
 	sequence[2] : 0;
 	sequence = tgetstr(UP_SEQUENCE, NULL);
-	g_select->key_sequences.up_arrow = ft_strlen(sequence) > 2 ?
+	select->key_sequences.up_arrow = ft_strlen(sequence) > 2 ?
 	sequence[2] : 0;
 	sequence = tgetstr(DOWN_SEQUENCE, NULL);
-	g_select->key_sequences.down_arrow = ft_strlen(sequence) > 2 ?
+	select->key_sequences.down_arrow = ft_strlen(sequence) > 2 ?
 	sequence[2] : 0;
 	sequence = tgetstr(DELETE_SEQUENCE, NULL);
-	g_select->key_sequences.delete = ft_strlen(sequence) > 2 ?
+	select->key_sequences.delete = ft_strlen(sequence) > 2 ?
 	sequence[2] : 0;
 }
 
-void	init_termcaps(void)
+void	init_termcaps(t_select **select)
 {
 	char *terminal_name;
 
-	g_select = (t_select*)ft_memalloc(sizeof(t_select));
-	g_select->selected_amount = 0;
+	*select = (t_select*)ft_memalloc(sizeof(t_select));
+	(*select)->selected_amount = 0;
 	if (!(isatty(0)))
-		handle_error("Not a terminal", 0);
+		handle_error(*select, "Not a terminal", 0);
 	if (!(terminal_name = getenv("TERM")))
-		handle_error("Terminal enviroment variable not found", 0);
+		handle_error(*select, "Terminal enviroment variable not found", 0);
 	if (tgetent(NULL, terminal_name) < 1)
-		handle_error("Terminal specified in env not found", 0);
-	init_key_sequences();
+		handle_error(*select, "Terminal specified in env not found", 0);
+	init_key_sequences(*select);
 }
 
-int		read_key(void)
+int		read_key(t_select *select)
 {
 	char c;
 	char sequence[3];
 	
 	c = 0;
 	if (read(0, &c, 1) == -1)
-		handle_error("Read failed.", 1);
+		handle_error(select, "Read failed.", 1);
 	if (c == ESCAPE)
 	{
 		if (read(0, &sequence[0], 1) != 1)
@@ -238,111 +239,111 @@ int		read_key(void)
 	return c;
 }
 
-int		delete_arg(t_arg *arg)
+int		delete_arg(t_select *select, t_arg *arg)
 {
 	int		last_arg;
 
 	last_arg = 0;
 	if (arg == arg->next)
 		last_arg = 1;
-	if (arg == g_select->args)
-		g_select->args = g_select->args->next;
+	if (arg == select->args)
+		select->args = select->args->next;
 	arg->prev->next = arg->next;
-	arg->next->prev = arg-> prev;
+	arg->next->prev = arg->prev;
 	if (arg->selected)
-		g_select->selected_amount--;
-	g_select->current = arg->next;
+		select->selected_amount--;
+	select->current = arg->next;
 	free(arg);
 	arg = NULL;
 	return (!last_arg);
 }
 
-void	handle_control_sequence(char *c)
+void	handle_control_sequence(t_select *select, char *c)
 {
 	*c += 100;
 
-	if (*c == g_select->key_sequences.delete)
+	if (*c == select->key_sequences.delete)
 	{
-		if (!(delete_arg(g_select->current)))
+		if (!(delete_arg(select, select->current)))
 			*c = ESCAPE;
 	}
-	else if (*c == g_select->key_sequences.left_arrow)
-		g_select->current = g_select->current->prev;
-	else if (*c == g_select->key_sequences.right_arrow)
-		g_select->current = g_select->current->next;
-	else if (*c == g_select->key_sequences.up_arrow)
-		g_select->current = g_select->args;
-	else if (*c == g_select->key_sequences.down_arrow)
-		g_select->current = g_select->args->prev;
+	else if (*c == select->key_sequences.left_arrow)
+		select->current = select->current->prev;
+	else if (*c == select->key_sequences.right_arrow)
+		select->current = select->current->next;
+	else if (*c == select->key_sequences.up_arrow)
+		select->current = select->args;
+	else if (*c == select->key_sequences.down_arrow)
+		select->current = select->args->prev;
 }
 
-void	select_deselect_all(int select)
+void	select_deselect_all(t_select *select, int boolean)
 {
 	t_arg	*arg;
 	int		loop;
 
-	arg = g_select->args;
-	g_select->selected_amount = 0;
+	arg = select->args;
+	select->selected_amount = 0;
 	loop = 0;
 	while(arg)
 	{
-		if (arg == g_select->args)
+		if (arg == select->args)
 			if (loop++)
 				break;
-		arg->selected = select;
-		g_select->selected_amount += select;
+		arg->selected = boolean;
+		select->selected_amount += boolean;
 		arg = arg->next;
 	}
 }
 
-int		handle_keys(void)
+int		handle_keys(t_select *select)
 {
 	char c;
 
-	c = read_key();
+	c = read_key(select);
 	if (c < 0)
-		handle_control_sequence(&c);
+		handle_control_sequence(select, &c);
 	if (c == BACKSPACE)
 	{
-		if (!(delete_arg(g_select->current)))
+		if (!(delete_arg(select, select->current)))
 			c = ESCAPE;
 	}
 	if (c == ESCAPE)
 	{
-		restore_terminal_mode();
+		restore_terminal_mode(select);
 		exit(0);
 	}
 	else if (c == ENTER)
 		return (0);
 	else if (c == SPACE)
 	{
-		g_select->current->selected = !g_select->current->selected;
-		g_select->selected_amount += g_select->current->selected ? 1 : -1;
-		g_select->current = g_select->current->next;
+		select->current->selected = !select->current->selected;
+		select->selected_amount += select->current->selected ? 1 : -1;
+		select->current = select->current->next;
 	}
 	else if (c == '+')
-		select_deselect_all(1);
+		select_deselect_all(select, 1);
 	else if (c == '-')
-		select_deselect_all(0);
+		select_deselect_all(select, 0);
 	return (1);
 }
 
-void	print_selected(void)
+void	print_selected(t_select *select)
 {
 	t_arg 	*current;
 	int		loop;
 
 	loop = 0;
-	current = g_select->args;
+	current = select->args;
 	while (current)
 	{
-		if (current == g_select->args)
+		if (current == select->args)
 			if (loop++)
 				break;
 		if (current->selected)
 		{
 			ft_fprintf(1, "%s", current->str);
-			if (g_select->selected_amount-- > 1)
+			if (select->selected_amount-- > 1)
 				ft_fprintf(1, " ");
 		}
 		current = current->next;
@@ -351,22 +352,24 @@ void	print_selected(void)
 
 int		main(int argc, char **argv)
 {
-	init_termcaps();
-	tcgetattr(0, &g_select->old);
+	t_select *select;
+
+	init_termcaps(&select);
+	tcgetattr(0, &select->old);
 	if (argc < 2)
-		handle_error("Please include at least one argument", 0);
-	init_signal_handling();
-	init_args(argc, argv);
-	create_terminal_raw_mode();
-	set_terminal_raw_mode();
+		handle_error(select, "Please include at least one argument", 0);
+	init_signal_handling(select);
+	init_args(select, argc, argv);
+	create_terminal_raw_mode(select);
+	set_terminal_raw_mode(select);
 	while (1)
 	{
 		ft_clear_screen();
-		print_args();
-		if (!(handle_keys()))
+		print_args(select);
+		if (!(handle_keys(select)))
 			break;
 	}
-	restore_terminal_mode();
-	print_selected();
+	restore_terminal_mode(select);
+	print_selected(select);
 	return (0);
 }
