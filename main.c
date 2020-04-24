@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/18 16:15:00 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/24 19:02:54 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/24 19:59:27 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -91,8 +91,7 @@ void	handle_signal_continue(t_select *select)
 {
 	set_terminal_raw_mode(select);
 	signal(SIGTSTP, handle_signal);
-	//ft_printf("Raw terminal configuration restored!\n");
-	ft_clear_screen(); // find way to not repeat this
+	ft_clear_screen();
 	print_args(select);
 }
 
@@ -101,19 +100,10 @@ void	handle_signal_resize(t_select *select)
 	ioctl(STDERR_FILENO, TIOCGWINSZ, &select->window_size);
 	ft_clear_screen();
 	print_args(select);
-	int i = 0;
-	for (t_arg *arg = select->args->next; arg != select->args; arg = arg->next)
-		i += ft_strlen(arg->str) + 1;
-	i += ft_strlen(select->args->str);
-	//ft_printf("%d\n", i);
-	//ft_printf("%d\n", select->window_size.ws_col);
 }
 
 void	handle_signal(int sig)
 {
-	//ft_printf("Signal %d handled!\n", sig);
-	//ft_printf("Old terminal configuration restored!\n");
-	//free memory here
 	if (sig == SIGTSTP)
 		handle_signal_suspend(g_select);
 	else if (sig == SIGCONT)
@@ -140,7 +130,7 @@ void	init_signal_handling(t_select *select)
 
 int		count_rows(t_select *select)
 {
-	t_arg 	*current;
+	t_arg	*current;
 	int		loop;
 	int		line_len;
 	int		rows;
@@ -152,11 +142,10 @@ int		count_rows(t_select *select)
 	while (current)
 	{
 		if (current == select->args)
-		{
 			if (loop++)
-				break;
-		}
-		if ((line_len += ft_strlen(current->str) + 2) > select->window_size.ws_col)
+				break ;
+		if ((line_len += ft_strlen(current->str) + 2) >
+		select->window_size.ws_col)
 		{
 			line_len = ft_strlen(current->str) + 2;
 			rows++;
@@ -168,8 +157,8 @@ int		count_rows(t_select *select)
 
 void	print_screen_too_small(t_select *select)
 {
-	int i;
-	char *message;
+	int		i;
+	char	*message;
 
 	i = 0;
 	while (++i < select->window_size.ws_row / 2)
@@ -186,38 +175,59 @@ void	print_screen_too_small(t_select *select)
 	ft_fprintf(STDERR_FILENO, "%s", message);
 }
 
-void	print_args(t_select *select)
+void	print_arg(t_select *select, t_arg *arg)
 {
-	t_arg 	*current;
-	int		loop;
-	int		line_len;
+	struct stat stats;
 
-	loop = 0;
-	line_len = 0;
-	current = select->args;
+	if (arg == select->current)
+		set_terminal(TEXT_UNDERLINE);
+	if (arg->selected)
+		set_terminal(TEXT_INVERSE_VIDEO);
+	lstat(arg->str, &stats);
+	if (S_ISDIR(stats.st_mode))
+		ft_printf("\033[1;34m");
+	if (!S_ISDIR(stats.st_mode) &&
+		stats.st_mode & S_IXUSR)
+		ft_printf("\033[1;32m");
+	if (S_ISLNK(stats.st_mode))
+		ft_printf("\033[1;31m");
+	ft_fprintf(STDERR_FILENO, "%s", arg->str);
+	set_terminal(TEXT_NORMAL);
+}
+
+int		screen_too_small(t_select *select)
+{
 	if (count_rows(select) >= select->window_size.ws_row)
 	{
 		print_screen_too_small(select);
-		return ;
+		return (1);
 	}
+	return (0);
+}
+
+void	print_args(t_select *select)
+{
+	t_arg	*current;
+	int		loop;
+	int		line_len;
+
+	line_len = 0;
+	current = select->args;
+	if (screen_too_small(select))
+		return ;
+	loop = 0;
 	while (current)
 	{
 		if (current == select->args)
-		{
 			if (loop++)
-				break;
-		}
-		if (current == select->current)
-			set_terminal(TEXT_UNDERLINE);
-		if (current->selected)
-			set_terminal(TEXT_INVERSE_VIDEO);
-		if ((line_len += ft_strlen(current->str) + 2) > select->window_size.ws_col)
+				break ;
+		if ((line_len += ft_strlen(current->str) + 2) >
+		select->window_size.ws_col)
 		{
 			ft_fprintf(STDERR_FILENO, "\n");
 			line_len = ft_strlen(current->str) + 2;
 		}
-		ft_fprintf(STDERR_FILENO, "%s", current->str);
-		set_terminal(TEXT_NORMAL);
+		print_arg(select, current);
 		current = current->next;
 		if (current)
 			ft_fprintf(STDERR_FILENO, "  ");
@@ -232,7 +242,7 @@ void	ft_clear_screen(void)
 t_arg	*new_arg(char *str, t_arg *prev)
 {
 	t_arg *new;
-	
+
 	new = (t_arg*)ft_memalloc(sizeof(t_arg));
 	new->str = str;
 	new->selected = 0;
@@ -243,8 +253,8 @@ t_arg	*new_arg(char *str, t_arg *prev)
 
 void	init_args(t_select *select, int argc, char **argv)
 {
-	t_arg *current;
-	int i;
+	t_arg	*current;
+	int		i;
 
 	current = NULL;
 	i = 1;
@@ -307,7 +317,7 @@ int		read_key(t_select *select)
 {
 	char c;
 	char sequence[3];
-	
+
 	c = 0;
 	if (read(STDERR_FILENO, &c, 1) == -1)
 		handle_error(select, "Read failed", 1);
@@ -327,7 +337,7 @@ int		read_key(t_select *select)
 			return (sequence[1] - 100);
 		}
 	}
-	return c;
+	return (c);
 }
 
 int		delete_arg(t_select *select, t_arg *arg)
@@ -352,7 +362,6 @@ int		delete_arg(t_select *select, t_arg *arg)
 void	handle_control_sequence(t_select *select, char *c)
 {
 	*c += 100;
-
 	if (*c == select->key_sequences.delete)
 	{
 		if (!(delete_arg(select, select->current)))
@@ -376,15 +385,22 @@ void	select_deselect_all(t_select *select, int boolean)
 	arg = select->args;
 	select->selected_amount = 0;
 	loop = 0;
-	while(arg)
+	while (arg)
 	{
 		if (arg == select->args)
 			if (loop++)
-				break;
+				break ;
 		arg->selected = boolean;
 		select->selected_amount += boolean;
 		arg = arg->next;
 	}
+}
+
+void	handle_space_key(t_select *select)
+{
+	select->current->selected = !select->current->selected;
+	select->selected_amount += select->current->selected ? 1 : -1;
+	select->current = select->current->next;
 }
 
 int		handle_keys(t_select *select)
@@ -407,11 +423,7 @@ int		handle_keys(t_select *select)
 	else if (c == ENTER)
 		return (0);
 	else if (c == SPACE)
-	{
-		select->current->selected = !select->current->selected;
-		select->selected_amount += select->current->selected ? 1 : -1;
-		select->current = select->current->next;
-	}
+		handle_space_key(select);
 	else if (c == '+')
 		select_deselect_all(select, 1);
 	else if (c == '-')
@@ -421,7 +433,7 @@ int		handle_keys(t_select *select)
 
 void	print_selected(t_select *select)
 {
-	t_arg 	*current;
+	t_arg	*current;
 	int		loop;
 
 	loop = 0;
@@ -430,7 +442,7 @@ void	print_selected(t_select *select)
 	{
 		if (current == select->args)
 			if (loop++)
-				break;
+				break ;
 		if (current->selected)
 		{
 			ft_fprintf(STDOUT_FILENO, "%s", current->str);
@@ -458,7 +470,7 @@ int		main(int argc, char **argv)
 		ft_clear_screen();
 		print_args(select);
 		if (!(handle_keys(select)))
-			break;
+			break ;
 	}
 	restore_terminal_mode(select);
 	print_selected(select);
