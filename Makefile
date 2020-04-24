@@ -6,16 +6,16 @@
 #    By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+         #
 #                                                 +#+#+#+#+#+   +#+            #
 #    Created: 2020/04/10 19:27:20 by sadawi            #+#    #+#              #
-#    Updated: 2020/04/21 15:37:06 by sadawi           ###   ########.fr        #
+#    Updated: 2020/04/24 20:17:32 by sadawi           ###   ########.fr        #
 #                                                                              #
 # **************************************************************************** #
 
 NAME = ft_select
 
-CFILES = *.c
+CFILES = count_rows.c free_memory.c handle_error.c handle_keypress.c \
+handle_signal.c initialize.c main.c print.c set_terminal.c utilities.c
 
-SRCS = $(CFILES)
-#SRCS = $(addprefix srcs/, $(CFILES))
+SRCS = $(addprefix srcs/, $(CFILES))
 
 OBJS = $(addprefix objs/, $(notdir $(SRCS:.c=.o)))
 
