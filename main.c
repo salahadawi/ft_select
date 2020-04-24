@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/18 16:15:00 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/24 15:29:24 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/24 15:29:59 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -34,7 +34,7 @@ void	restore_terminal_mode(t_select *select)
 
 void	handle_error(t_select *select, char *message, int reset)
 {
-	ft_fprintf(2, "Error: %s.\n", message);
+	ft_fprintf(STDERR_FILENO, "Error: %s.\n", message);
 	if (reset)
 		restore_terminal_mode(select);
 	exit(0);
