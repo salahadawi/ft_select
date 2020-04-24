@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/18 16:15:00 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/24 15:29:59 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/24 19:02:54 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -24,6 +24,25 @@ void	set_terminal(char *id)
 	tputs(tgetstr(id, NULL), 1, ft_putschar);
 }
 
+void	free_memory(t_select *select)
+{
+	t_arg *next;
+
+	if (select->args)
+	{
+		select->args->prev->next = NULL;
+		while (select->args)
+		{
+			select->args->prev = NULL;
+			next = select->args->next;
+			free(select->args);
+			select->args = next;
+		}
+		free(select->args);
+	}
+	free(select);
+}
+
 void	restore_terminal_mode(t_select *select)
 {
 	tcsetattr(STDERR_FILENO, TCSAFLUSH, &select->old);
@@ -37,6 +56,7 @@ void	handle_error(t_select *select, char *message, int reset)
 	ft_fprintf(STDERR_FILENO, "Error: %s.\n", message);
 	if (reset)
 		restore_terminal_mode(select);
+	free_memory(select);
 	exit(0);
 }
 
@@ -103,6 +123,7 @@ void	handle_signal(int sig)
 	else
 	{
 		restore_terminal_mode(g_select);
+		free_memory(g_select);
 		exit(0);
 	}
 }
@@ -441,5 +462,6 @@ int		main(int argc, char **argv)
 	}
 	restore_terminal_mode(select);
 	print_selected(select);
+	free_memory(select);
 	return (0);
 }
