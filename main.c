@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/18 16:15:00 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/24 13:20:52 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/24 15:27:33 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -14,7 +14,7 @@
 
 int		ft_putschar(int c)
 {
-	if (write(0, &c, 1) == -1)
+	if (write(STDERR_FILENO, &c, 1) == -1)
 		return (-1);
 	return (0);
 }
@@ -26,7 +26,7 @@ void	set_terminal(char *id)
 
 void	restore_terminal_mode(t_select *select)
 {
-	tcsetattr(STDIN_FILENO, TCSAFLUSH, &select->old);
+	tcsetattr(STDERR_FILENO, TCSAFLUSH, &select->old);
 	set_terminal(CURSOR_VISIBLE);
 	set_terminal(TEXT_NORMAL);
 	set_terminal(NORMAL_MODE);
@@ -42,7 +42,7 @@ void	handle_error(t_select *select, char *message, int reset)
 
 void	create_terminal_raw_mode(t_select *select)
 {
-	tcgetattr(0, &select->raw);
+	tcgetattr(STDERR_FILENO, &select->raw);
 	select->raw.c_lflag &= ~(ECHO | ICANON);
 	select->raw.c_cc[VMIN] = 0;
 	select->raw.c_cc[VTIME] = 1;
@@ -50,7 +50,7 @@ void	create_terminal_raw_mode(t_select *select)
 
 void	set_terminal_raw_mode(t_select *select)
 {
-	tcsetattr(STDIN_FILENO, TCSAFLUSH, &select->raw);
+	tcsetattr(STDERR_FILENO, TCSAFLUSH, &select->raw);
 	set_terminal(CURSOR_INVISIBLE);
 	set_terminal(SPECIAL_MODE);
 }
@@ -64,12 +64,13 @@ void	handle_signal_suspend(t_select *select)
 {
 	restore_terminal_mode(select);
 	signal(SIGTSTP, SIG_DFL);
-	ioctl(0, TIOCSTI, "\032");
+	ioctl(STDERR_FILENO, TIOCSTI, "\032");
 }
 
 void	handle_signal_continue(t_select *select)
 {
 	set_terminal_raw_mode(select);
+	signal(SIGTSTP, handle_signal);
 	//ft_printf("Raw terminal configuration restored!\n");
 	ft_clear_screen(); // find way to not repeat this
 	print_args(select);
@@ -77,7 +78,7 @@ void	handle_signal_continue(t_select *select)
 
 void	handle_signal_resize(t_select *select)
 {
-	ioctl(0, TIOCGWINSZ, &select->window_size);
+	ioctl(STDERR_FILENO, TIOCGWINSZ, &select->window_size);
 	ft_clear_screen();
 	print_args(select);
 	int i = 0;
@@ -151,17 +152,17 @@ void	print_screen_too_small(t_select *select)
 
 	i = 0;
 	while (++i < select->window_size.ws_row / 2)
-		ft_fprintf(0, "\n");
+		ft_fprintf(STDERR_FILENO, "\n");
 	i = 0;
 	message = "Window is too small to fit all arguments.\n";
 	while (i++ < select->window_size.ws_col / 2 - (int)ft_strlen(message) / 2)
-		ft_fprintf(0, " ");
-	ft_fprintf(0, "%s", message);
+		ft_fprintf(STDERR_FILENO, " ");
+	ft_fprintf(STDERR_FILENO, "%s", message);
 	i = 0;
 	message = "Increase window size to continue.\n";
 	while (i++ < select->window_size.ws_col / 2 - (int)ft_strlen(message) / 2)
-		ft_fprintf(0, " ");
-	ft_fprintf(0, "%s", message);
+		ft_fprintf(STDERR_FILENO, " ");
+	ft_fprintf(STDERR_FILENO, "%s", message);
 }
 
 void	print_args(t_select *select)
@@ -191,14 +192,14 @@ void	print_args(t_select *select)
 			set_terminal(TEXT_INVERSE_VIDEO);
 		if ((line_len += ft_strlen(current->str) + 2) > select->window_size.ws_col)
 		{
-			ft_fprintf(0, "\n");
+			ft_fprintf(STDERR_FILENO, "\n");
 			line_len = ft_strlen(current->str) + 2;
 		}
-		ft_fprintf(0, "%s", current->str);
+		ft_fprintf(STDERR_FILENO, "%s", current->str);
 		set_terminal(TEXT_NORMAL);
 		current = current->next;
 		if (current)
-			ft_fprintf(0, "  ");
+			ft_fprintf(STDERR_FILENO, "  ");
 	}
 }
 
@@ -278,7 +279,7 @@ void	init_termcaps(t_select **select)
 	if (tgetent(NULL, terminal_name) < 1)
 		handle_error(*select, "Terminal specified in env not found", 0);
 	init_key_sequences(*select);
-	ioctl(0, TIOCGWINSZ, &(*select)->window_size);
+	ioctl(STDERR_FILENO, TIOCGWINSZ, &(*select)->window_size);
 }
 
 int		read_key(t_select *select)
@@ -287,19 +288,19 @@ int		read_key(t_select *select)
 	char sequence[3];
 	
 	c = 0;
-	if (read(0, &c, 1) == -1)
-		handle_error(select, "Read failed.", 1);
+	if (read(STDERR_FILENO, &c, 1) == -1)
+		handle_error(select, "Read failed", 1);
 	if (c == ESCAPE)
 	{
-		if (read(0, &sequence[0], 1) != 1)
+		if (read(STDERR_FILENO, &sequence[0], 1) != 1)
 			return (ESCAPE);
-		if (read(0, &sequence[1], 1) != 1)
+		if (read(STDERR_FILENO, &sequence[1], 1) != 1)
 			return (ESCAPE);
 		if (sequence[0] == '[')
 		{
 			if (ft_isdigit(sequence[1]))
 			{
-				if (read(0, &sequence[2], 1) != 1)
+				if (read(STDERR_FILENO, &sequence[2], 1) != 1)
 					return (ESCAPE);
 			}
 			return (sequence[1] - 100);
@@ -411,9 +412,9 @@ void	print_selected(t_select *select)
 				break;
 		if (current->selected)
 		{
-			ft_fprintf(1, "%s", current->str);
+			ft_fprintf(STDOUT_FILENO, "%s", current->str);
 			if (select->selected_amount-- > 1)
-				ft_fprintf(1, " ");
+				ft_fprintf(STDOUT_FILENO, " ");
 		}
 		current = current->next;
 	}
@@ -424,7 +425,7 @@ int		main(int argc, char **argv)
 	t_select *select;
 
 	init_termcaps(&select);
-	tcgetattr(0, &select->old);
+	tcgetattr(STDERR_FILENO, &select->old);
 	if (argc < 2)
 		handle_error(select, "Please include at least one argument", 0);
 	init_signal_handling(select);
