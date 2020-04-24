@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/18 16:15:00 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/23 19:07:16 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/24 13:20:52 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -29,7 +29,7 @@ void	restore_terminal_mode(t_select *select)
 	tcsetattr(STDIN_FILENO, TCSAFLUSH, &select->old);
 	set_terminal(CURSOR_VISIBLE);
 	set_terminal(TEXT_NORMAL);
-	set_terminal("te");
+	set_terminal(NORMAL_MODE);
 }
 
 void	handle_error(t_select *select, char *message, int reset)
@@ -52,7 +52,7 @@ void	set_terminal_raw_mode(t_select *select)
 {
 	tcsetattr(STDIN_FILENO, TCSAFLUSH, &select->raw);
 	set_terminal(CURSOR_INVISIBLE);
-	set_terminal("ti");
+	set_terminal(SPECIAL_MODE);
 }
 
 int		iscntrl(int c)
@@ -116,6 +116,54 @@ void	init_signal_handling(t_select *select)
 		signal(i++, handle_signal);
 }
 
+int		count_rows(t_select *select)
+{
+	t_arg 	*current;
+	int		loop;
+	int		line_len;
+	int		rows;
+
+	rows = 0;
+	loop = 0;
+	line_len = 0;
+	current = select->args;
+	while (current)
+	{
+		if (current == select->args)
+		{
+			if (loop++)
+				break;
+		}
+		if ((line_len += ft_strlen(current->str) + 2) > select->window_size.ws_col)
+		{
+			line_len = ft_strlen(current->str) + 2;
+			rows++;
+		}
+		current = current->next;
+	}
+	return (rows);
+}
+
+void	print_screen_too_small(t_select *select)
+{
+	int i;
+	char *message;
+
+	i = 0;
+	while (++i < select->window_size.ws_row / 2)
+		ft_fprintf(0, "\n");
+	i = 0;
+	message = "Window is too small to fit all arguments.\n";
+	while (i++ < select->window_size.ws_col / 2 - (int)ft_strlen(message) / 2)
+		ft_fprintf(0, " ");
+	ft_fprintf(0, "%s", message);
+	i = 0;
+	message = "Increase window size to continue.\n";
+	while (i++ < select->window_size.ws_col / 2 - (int)ft_strlen(message) / 2)
+		ft_fprintf(0, " ");
+	ft_fprintf(0, "%s", message);
+}
+
 void	print_args(t_select *select)
 {
 	t_arg 	*current;
@@ -125,6 +173,11 @@ void	print_args(t_select *select)
 	loop = 0;
 	line_len = 0;
 	current = select->args;
+	if (count_rows(select) >= select->window_size.ws_row)
+	{
+		print_screen_too_small(select);
+		return ;
+	}
 	while (current)
 	{
 		if (current == select->args)
@@ -139,7 +192,7 @@ void	print_args(t_select *select)
 		if ((line_len += ft_strlen(current->str) + 2) > select->window_size.ws_col)
 		{
 			ft_fprintf(0, "\n");
-			line_len = 0;
+			line_len = ft_strlen(current->str) + 2;
 		}
 		ft_fprintf(0, "%s", current->str);
 		set_terminal(TEXT_NORMAL);
