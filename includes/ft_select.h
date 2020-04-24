@@ -6,7 +6,7 @@
 /*   By: sadawi <sadawi@student.hive.fi>            +#+  +:+       +#+        */
 /*                                                +#+#+#+#+#+   +#+           */
 /*   Created: 2020/04/10 12:20:24 by sadawi            #+#    #+#             */
-/*   Updated: 2020/04/23 18:04:49 by sadawi           ###   ########.fr       */
+/*   Updated: 2020/04/24 12:25:57 by sadawi           ###   ########.fr       */
 /*                                                                            */
 /* ************************************************************************** */
 
@@ -33,6 +33,8 @@
 # define UP_SEQUENCE "ku"
 # define DOWN_SEQUENCE "kd"
 # define DELETE_SEQUENCE "kD"
+# define SPECIAL_MODE "ti"
+# define NORMAL_MODE "te"
 
 # define DELETE -49
 # define ENTER 10
