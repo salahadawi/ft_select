@@ -15,6 +15,7 @@ Launching ft_select with one or more parameters brings up a user interface with 
 * Enter: Exit program and return selected parameters
 * Escape: Cancel all selections and exit program
 
+## Example
 Launcing ft_select in my workspace like this:
 ```
 ./ft_select *
