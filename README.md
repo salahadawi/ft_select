@@ -30,4 +30,6 @@ Selecting some parameters:
 
 Pressing enter to return selected parameters:
 
-![ft_select-returned-parameters](https://github.com/salahadawi/ft_select/blob/master/images/ft_select-return.png)
+![ft_select-returned-parameters](https://github.com/salahadawi/ft_select/blob/master/images/ft_select-return.png
+
+The selected parameters are displayed.
