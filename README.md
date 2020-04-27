@@ -1,6 +1,8 @@
-# ft_select - Terminal manipulation with termcaps.
-![ft_select-gif](https://github.com/salahadawi/ft_select/blob/master/images/ft_select-video.gif)
-
+<p style="center"># ft_select - Terminal manipulation with termcaps.</p>
+<p align="center">
+    <img width="" height="80" src="https://github.com/salahadawi/ft_select/blob/master/images/ft_select-video.gif">
+</p>
+<p style="text-align: center;">Centered text</p>
 The goal of this project was to create a user interface for a terminal program, using the termcaps library to configure and manipulate the terminal.
 
 This program takes one or several parameters, displays them in the terminal, and allows the user to select through an user interface which parameters are returned to the shell.
