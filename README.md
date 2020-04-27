@@ -1,5 +1,6 @@
 # ft_select - Terminal manipulation with termcaps.
 The goal of this project was to create a user interface for a terminal program, using the termcaps library to configure and manipulate the terminal.
+This program takes one or several parameters, displays them in the terminal, and allows the user to select through an user interface which parameters are returned to the shell.
 
 ## Usage
 Launching ft_select with one or more parameters brings up a user interface with these parameters.
