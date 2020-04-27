@@ -26,14 +26,14 @@ Launcing ft_select in my workspace like this:
 ```
 Results in this:
 
-![ft_select-program](https://github.com/salahadawi/ft_select/blob/master/images/ft_select.png)
+<img width="" height="80" src="https://github.com/salahadawi/ft_select/blob/master/images/ft_select.png">
 
 Selecting some parameters:
 
-![ft_select-selected-parameters](https://github.com/salahadawi/ft_select/blob/master/images/ft_select-selections.png)
+<img width="" height="80" src="https://github.com/salahadawi/ft_select/blob/master/images/ft_select-selections.png">
 
 Pressing enter to return selected parameters:
 
-![ft_select-returned-parameters](https://github.com/salahadawi/ft_select/blob/master/images/ft_select-return.png)
+<img width="" height="80" src="https://github.com/salahadawi/ft_select/blob/master/images/ft_select-return.png">
 
 The selected parameters are displayed.
