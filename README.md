@@ -4,10 +4,10 @@ The goal of this project was to create a user interface for a terminal program, 
 ## Usage
 Launching ft_select with one or more parameters brings up a user interface with these parameters.
 
-* Left arrow: Move left
-* Right arrow: Move right
-* Up arrow: Jump to start
-* Down arrow: Jump to end
+* Left arrow: Move cursor left
+* Right arrow: Move cursor right
+* Up arrow: Jump cursor to start
+* Down arrow: Jump cursor to end
 * Space: Toggle selection
 * '+' key: Select all
 * '-' key: Deselect all
