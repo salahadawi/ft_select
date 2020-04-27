@@ -1,4 +1,4 @@
-<h1 align="center">ft_select</h1>
+<h1 align="center">ft_select - Terminal manipulation with termcaps.</h1>
 <p align="center">
     <img width="" height="80" src="https://github.com/salahadawi/ft_select/blob/master/images/ft_select-video.gif">
 </p>
